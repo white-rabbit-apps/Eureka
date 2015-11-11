@@ -110,7 +110,6 @@ public class MultipleSelectorViewController<T:Hashable> : FormViewController, Ty
     
 }
 
-
 public class SelectorAlertController<T: Equatable> : UIAlertController, TypedRowControllerType {
     
     public var row: RowOf<T>!
@@ -162,5 +161,3 @@ public class ImagePickerController : UIImagePickerController, TypedRowController
         completionCallback?(self)
     }
 }
-
-

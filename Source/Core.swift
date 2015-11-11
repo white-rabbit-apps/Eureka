@@ -44,6 +44,7 @@ public protocol FormDelegate : class {
     func rowsHaveBeenRemoved(rows: [BaseRow], atIndexPaths:[NSIndexPath])
     func rowsHaveBeenReplaced(oldRows oldRows:[BaseRow], newRows: [BaseRow], atIndexPaths: [NSIndexPath])
     func rowValueHasBeenChanged(row: BaseRow, oldValue: Any?, newValue: Any?)
+    func rowValueHasBeenValidated(row: BaseRow, validationResults: [ValidationResult])
 }
 
 public protocol SectionDelegate: class {
@@ -221,7 +222,7 @@ public final class Form {
     
     public weak var delegate: FormDelegate?
 
-    public init(){}
+    public init() {}
     
     public subscript(indexPath: NSIndexPath) -> BaseRow {
         return self[indexPath.section][indexPath.row]
@@ -279,7 +280,13 @@ public final class Form {
             }
         }
     }
-    
+
+    public func validationErrors() -> [ValidationResult] {
+      return rows
+        .flatMap { $0.validate() }
+        .filter { !$0.valid }
+    }
+
     //MARK: Private
     
     var rowObservers = [String: [ConditionType: [Taggable]]]()
@@ -941,46 +948,51 @@ extension RowType where Self : BaseRow, Cell : TypedCellType, Cell.Value == Valu
         get { return RowDefaults.rawRowInitialization["\(self)"] as? (Self -> ()) }
     }
     
-    public func onChange(callback: Self -> ()) -> Self{
+    public func onChange(callback: Self -> ()) -> Self {
         callbackOnChange = { [unowned self] in callback(self) }
         return self
     }
-    
-    public func cellUpdate(callback: ((cell: Cell, row: Self) -> ())) -> Self{
-        callbackCellUpdate = { [unowned self] in  callback(cell: self.cell, row: self) }
+
+    public func onValidate(callback: (Self, validationResults: [ValidationResult]) -> ()) -> Self {
+        callbackOnValidate = { [unowned self] in callback(self, validationResults: $0) }
+        return self
+    }
+
+    public func cellUpdate(callback: ((cell: Cell, row: Self) -> ())) -> Self {
+        callbackCellUpdate = { [unowned self] in callback(cell: self.cell, row: self) }
         return self
     }
     
-    public func cellSetup(callback: ((cell: Cell, row: Self) -> ())) -> Self{
-        callbackCellSetup = { [unowned self] (cell:Cell) in  callback(cell: cell, row: self) }
+    public func cellSetup(callback: ((cell: Cell, row: Self) -> ())) -> Self {
+        callbackCellSetup = { [unowned self] (cell:Cell) in callback(cell: cell, row: self) }
         return self
     }
     
-    public func onCellSelection(callback: ((cell: Cell, row: Self) -> ())) -> Self{
-        callbackCellOnSelection = { [unowned self] in  callback(cell: self.cell, row: self) }
+    public func onCellSelection(callback: ((cell: Cell, row: Self) -> ())) -> Self {
+        callbackCellOnSelection = { [unowned self] in callback(cell: self.cell, row: self) }
         return self
     }
     
-    public func onCellHighlight(callback: (cell: Cell, row: Self)->()) -> Self {
-        callbackOnCellHighlight = { [unowned self] in  callback(cell: self.cell, row: self) }
+    public func onCellHighlight(callback: (cell: Cell, row: Self) -> ()) -> Self {
+        callbackOnCellHighlight = { [unowned self] in callback(cell: self.cell, row: self) }
         return self
     }
     
-    public func onCellUnHighlight(callback: (cell: Cell, row: Self)->()) -> Self {
-        callbackOnCellUnHighlight = { [unowned self] in  callback(cell: self.cell, row: self) }
+    public func onCellUnHighlight(callback: (cell: Cell, row: Self) -> ()) -> Self {
+        callbackOnCellUnHighlight = { [unowned self] in callback(cell: self.cell, row: self) }
         return self
     }
 }
 
 
-public class BaseRow : BaseRowType {
-
-    private var callbackOnChange: (()->Void)?
-    private var callbackCellUpdate: (()->Void)?
+public class BaseRow: BaseRowType {
+    private var callbackOnChange: (() -> Void)?
+    private var callbackOnValidate: ((validationResults: [ValidationResult]) -> Void)?
+    private var callbackCellUpdate: (() -> Void)?
     private var callbackCellSetup: Any?
-    private var callbackCellOnSelection: (()->Void)?
-    private var callbackOnCellHighlight: (()->Void)?
-    private var callbackOnCellUnHighlight: (()->Void)?
+    private var callbackCellOnSelection: (() -> Void)?
+    private var callbackOnCellHighlight: (() -> Void)?
+    private var callbackOnCellUnHighlight: (() -> Void)?
     private var callbackOnExpandInlineRow: Any?
     private var callbackOnCollapseInlineRow: Any?
     private var _inlineRow: BaseRow?
@@ -1003,12 +1015,15 @@ public class BaseRow : BaseRowType {
     }
     public var isDisabled : Bool { return disabledCache }
     public var isHidden : Bool { return hiddenCache }
-    
+
+    public var validations: [RowValidator]?
+
     public weak var section: Section?
 
-    public required init(tag: String? = nil){
+    public required init(tag: String? = nil) {
         self.tag = tag
     }
+
     public func updateCell() {}
     public func didSelect() {}
     
@@ -1016,12 +1031,24 @@ public class BaseRow : BaseRowType {
     public func unhighlightCell() {}
     
     public func prepareForSegue(segue: UIStoryboardSegue) {}
-    
+
+    public func validate() -> [ValidationResult] {
+      let results = (validations ?? []).map { $0.validate(self) }
+
+      if let delegate = section?.form?.delegate {
+        delegate.rowValueHasBeenValidated(self, validationResults: results)
+      }
+
+      callbackOnValidate?(validationResults: results)
+
+      return results
+    }
+
     public final func indexPath() -> NSIndexPath? {
         guard let sectionIndex = section?.index, let rowIndex = section?.indexOf(self) else { return nil }
         return NSIndexPath(forRow: rowIndex, inSection: sectionIndex)
     }
-    
+
     private var hiddenCache = false
     private var disabledCache = false {
         willSet {
@@ -1141,7 +1168,7 @@ extension BaseRow {
 
 public class RowOf<T: Equatable>: BaseRow {
     
-    public var value : T?{
+    public var value: T? {
         didSet {
             guard value != oldValue else { return }
             guard let form = section?.form else { return }
@@ -1170,19 +1197,19 @@ public class RowOf<T: Equatable>: BaseRow {
     
     public var dataProvider: DataProvider<T>?
         
-    public var displayValueFor : (T? -> String?)? = {
+    public var displayValueFor: (T? -> String?)? = {
         if let t = $0 {
             return String(t)
         }
         return nil
     }
     
-    public required init(tag: String?){
+    public required init(tag: String?) {
         super.init(tag: tag)
     }
 }
 
-public class Row<T: Equatable, Cell: CellType where Cell: BaseCell, Cell.Value == T>: RowOf<T>,  TypedRowType {
+public class Row<T: Equatable, Cell: CellType where Cell: BaseCell, Cell.Value == T>: RowOf<T>, TypedRowType {
     
     public var cellProvider = CellProvider<Cell>()
     public let cellType: Cell.Type! = Cell.self
@@ -1692,6 +1719,8 @@ public protocol FormViewControllerProtocol {
     func insertAnimationForSections(sections : [Section]) -> UITableViewRowAnimation
     func deleteAnimationForSections(sections : [Section]) -> UITableViewRowAnimation
     func reloadAnimationOldSections(oldSections: [Section], newSections:[Section]) -> UITableViewRowAnimation
+
+    func formValidationErrors() -> [ValidationResult]
 }
 
 public struct RowNavigationOptions : OptionSetType {
@@ -1730,7 +1759,7 @@ public struct InlineRowHideOptions : OptionSetType {
 }
 
 
-public class FormViewController : UIViewController, FormViewControllerProtocol {
+public class FormViewController : UIViewController {
     
     @IBOutlet public var tableView: UITableView?
     
@@ -1826,7 +1855,15 @@ public class FormViewController : UIViewController, FormViewControllerProtocol {
     //MARK: FormDelegate
     
     public func rowValueHasBeenChanged(row: BaseRow, oldValue: Any?, newValue: Any?) {}
+    public func rowValueHasBeenValidated(row: BaseRow, validationResults: [ValidationResult]) {}
     
+    //MARK: Private
+    
+    private var oldBottomInset : CGFloat?
+}
+
+extension FormViewController: FormViewControllerProtocol {
+
     //MARK: FormViewControllerProtocol
     
     public final func beginEditing<T:Equatable>(cell: Cell<T>) {
@@ -1913,10 +1950,10 @@ public class FormViewController : UIViewController, FormViewControllerProtocol {
         tableView?.endEditing(true)
         return true
     }
-    
-    //MARK: Private
-    
-    private var oldBottomInset : CGFloat?
+
+    public func formValidationErrors() -> [ValidationResult] {
+        return form.validationErrors()
+    }
 }
 
 extension FormViewController : UITableViewDelegate {

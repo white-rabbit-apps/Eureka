@@ -32,7 +32,6 @@ class BaseEurekaTests: XCTestCase {
     var manySectionsForm = Form()
     var formVC = FormViewController()
     
-    
     override func setUp() {
         super.setUp()
         
@@ -40,7 +39,6 @@ class BaseEurekaTests: XCTestCase {
         formVC.view.frame = CGRectMake(0, 0, 375, 3000)
         formVC.tableView?.frame = formVC.view.frame
 
-        
         // Create a Date section containing one date row of each type and some extra rows that use minimumDate, maximumDate and minuteInterval restrictions
         dateForm +++= Section("Date Section")
             <<< DateRow("DateRow_d1"){ $0.title = "Date"; $0.value = NSDate() }
@@ -98,10 +96,9 @@ class BaseEurekaTests: XCTestCase {
     }
 }
 
-
-
-public class MyFormDelegate : FormDelegate {
+public class MyFormDelegate: FormDelegate {
     public var valuesChanged = 0
+    public var valuesValidated = 0
     public var rowsAdded = 0
     public var sectionsAdded = 0
     public var rowsRemoved = 0
@@ -113,6 +110,10 @@ public class MyFormDelegate : FormDelegate {
     
     public func rowValueHasBeenChanged(row: BaseRow, oldValue: Any?, newValue: Any?) {
         valuesChanged++
+    }
+
+    public func rowValueHasBeenValidated(row: BaseRow, validationResults: [ValidationResult]) {
+        valuesValidated++
     }
     
     public func sectionsHaveBeenAdded(sections: [Section], atIndexes: NSIndexSet){
@@ -140,5 +141,4 @@ public class MyFormDelegate : FormDelegate {
         rowsReplacedIn += newRows.count
         rowsReplacedOut += oldRows.count
     }
-    
 }
