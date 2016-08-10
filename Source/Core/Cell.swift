@@ -93,6 +93,8 @@ open class Cell<T: Equatable> : BaseCell, TypedCellType {
     /// The row associated to this cell
     public weak var row : RowOf<T>!
 
+    private var firstLoad: Bool = true
+    
     /// Returns the navigationAccessoryView if it is defined or calls super if not.
     override open var inputAccessoryView: UIView? {
         if let v = formViewController()?.inputAccessoryView(for: row){
@@ -122,8 +124,46 @@ open class Cell<T: Equatable> : BaseCell, TypedCellType {
      */
     open override func update(){
         super.update()
-        textLabel?.text = row.title
-        textLabel?.textColor = row.isDisabled ? .gray : .black
+        if  self.self.dynamicType == Eureka.ButtonCell || self.self.dynamicType == Eureka.TextAreaCell {
+            textLabel?.text = row.title
+            textLabel?.textColor = row.isDisabled ? .gray : .black
+        } else {
+            let numberOfSpace = row.title?.characters.count
+            if numberOfSpace > 0{
+                var text = ""
+                for _ in 0...numberOfSpace!{
+                    text += "  "
+                    textLabel?.text = text
+                }
+            }
+            
+            imageView?.hidden = true
+            let text = row.title
+            let width = UIScreen.mainScreen().bounds.width
+            let height = self.frame.height
+            let labelView = UILabel(frame: CGRectMake(50, 0, width/2 , height))
+            labelView.text = text
+            
+            let imgView = UIImageView()
+            if width > 400{
+                imgView.frame = CGRectMake(17, (height-25)/2, 25 , height)
+            } else {
+                imgView.frame = CGRectMake(13, (height-25)/2, 25 , height)
+            }
+            
+            imgView.image = imageView?.image
+            imgView.sizeToFit()
+            
+            if firstLoad{
+                self.addSubview(imgView)
+                self.addSubview(labelView)
+            }
+            
+            firstLoad = false
+            
+        }
+        
+        textLabel?.textColor = row.isDisabled ? .grayColor() : .blackColor()
         detailTextLabel?.text = row.displayValueFor?(row.value) ?? (row as? NoValueDisplayTextConformance)?.noValueDisplayText
     }
 
