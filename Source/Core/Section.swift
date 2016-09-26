@@ -127,6 +127,8 @@ open class Section {
     /// The tag is used to uniquely identify a Section. Must be unique among sections and rows.
     public var tag: String?
     
+    public var color : UIColor?
+    
     /// The form that contains this section
     public internal(set) weak var form: Form?
     
@@ -162,9 +164,21 @@ open class Section {
         initializer(self)
     }
     
-    public init(_ header: String, _ initializer: (Section) -> () = { _ in }){
-        self.header = HeaderFooterView(stringLiteral: header)
+    public init(_ headerTitle: String, _ initializer: Section -> () = { _ in }){
+        
+        var header = HeaderFooterView<UIView>(.class)
+        header.height = { 50 }
+        header.title = headerTitle
+        header.onSetupView = { view, section  in
+            view.backgroundColor = self.color
+        }
+        
+        self.header = header
         initializer(self)
+    }
+    
+    public init (text :String) {
+        
     }
     
     public init(header: String, footer: String, _ initializer: (Section) -> () = { _ in }){
