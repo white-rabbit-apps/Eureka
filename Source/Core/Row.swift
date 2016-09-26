@@ -80,6 +80,17 @@ open class RowOf<T: Equatable>: BaseRow {
         return $0.map { String(describing: $0) }
     }
 
+    // Variable used to specify the Images type for segmentedControl
+    public var isImageforSegmentedControl: Bool = false
+    
+    //Block variable used to get the UIImage that should be displayed in segmentedControl.
+    public var displayImageFor : ((T?) -> UIImage?)? = {
+        if let t = $0 {
+            return UIImage(named:"\(String(describing: t))")
+        }
+        return nil
+    }
+    
     public required init(tag: String?){
         super.init(tag: tag)
     }
