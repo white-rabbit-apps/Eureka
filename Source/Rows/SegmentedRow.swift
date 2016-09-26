@@ -106,7 +106,7 @@ open class SegmentedCell<T: Equatable> : Cell<T>, CellType {
     func updateSegmentedControl() {
         segmentedControl.removeAllSegments()
         //check if images or text should be in segmentedControl
-        if row.isImageforSegmentedControl{
+        if row.optionImages != nil {
             //set custom color for segmentedControl
             segmentedControl.tintColor = UIColor(colorLiteralRed: 198/255.0, green: 198/255.0, blue: 198/255.0, alpha: 1.0)
             items().enumerated().forEach {
@@ -125,7 +125,7 @@ open class SegmentedCell<T: Equatable> : Cell<T>, CellType {
             }
             
         } else {
-            items().enumerated().forEach { segmentedControl.insertSegment(withTitle: $0.element , at: $0.offset, animated: false) }
+            items().enumerated().forEach { segmentedControl.insertSegment(withTitle: $0.element as? String, at: $0.offset, animated: false) }
         }
     }
     
@@ -167,16 +167,16 @@ open class SegmentedCell<T: Equatable> : Cell<T>, CellType {
         super.updateConstraints()
     }
     
-    func items() -> [String] {// or create protocol for options
+    func items() -> [Any] {// or create protocol for options
         var result = [Any]()
-        for object in (row as! SegmentedRow<T>).options {
-            if row.isImageforSegmentedControl {
-                result.append(row.displayImageFor?(object)?.withRenderingMode(UIImageRenderingMode.alwaysOriginal) ?? UIImage())
+        for (index, object) in (row as! SegmentedRow<T>).options.enumerated() {
+            if row.optionImages != nil {
+                result.append(row.optionImages![index].withRenderingMode(.alwaysOriginal) )
             } else {
                 result.append(row.displayValueFor?(object) ?? "")
             }
         }
-        return result as! [String]
+        return result
     }
     
     func selectedIndex() -> Int? {

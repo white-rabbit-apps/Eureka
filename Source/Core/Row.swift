@@ -79,9 +79,8 @@ open class RowOf<T: Equatable>: BaseRow {
     public var displayValueFor : ((T?) -> String?)? = {
         return $0.map { String(describing: $0) }
     }
-
-    // Variable used to specify the Images type for segmentedControl
-    public var isImageforSegmentedControl: Bool = false
+    
+    public var optionImages: [UIImage]?
     
     //Block variable used to get the UIImage that should be displayed in segmentedControl.
     public var displayImageFor : ((T?) -> UIImage?)? = {
