@@ -163,7 +163,7 @@ open class Cell<T: Equatable> : BaseCell, TypedCellType {
             
         }
         
-        textLabel?.textColor = row.isDisabled ? .grayColor() : .blackColor()
+        textLabel?.textColor = row.isDisabled ? .gray : .black
         detailTextLabel?.text = row.displayValueFor?(row.value) ?? (row as? NoValueDisplayTextConformance)?.noValueDisplayText
     }
 
