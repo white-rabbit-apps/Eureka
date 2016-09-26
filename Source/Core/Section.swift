@@ -164,7 +164,7 @@ open class Section {
         initializer(self)
     }
     
-    public init(_ headerTitle: String, _ initializer: Section -> () = { _ in }){
+    public init(_ headerTitle: String, _ initializer: (Section) -> () = { _ in }){
         
         var header = HeaderFooterView<UIView>(.class)
         header.height = { 50 }
