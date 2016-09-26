@@ -239,6 +239,7 @@ open class _TextAreaCell<T> : Cell<T>, UITextViewDelegate, AreaCell where T: Equ
         }
         if let imageView = imageView, let _ = imageView.image {
             views["imageView"] = imageView
+
             if UIScreen.main.bounds.width < 400{
                 dynamicConstraints.append(contentsOf: NSLayoutConstraint.constraints(withVisualFormat: "H:[imageView]-15-[textView]-|", options: [], metrics: nil, views: views))
                 dynamicConstraints.append(contentsOf: NSLayoutConstraint.constraints(withVisualFormat: "H:[imageView]-15-[label]-|", options: [], metrics: nil, views: views))
@@ -246,6 +247,8 @@ open class _TextAreaCell<T> : Cell<T>, UITextViewDelegate, AreaCell where T: Equ
                 dynamicConstraints.append(contentsOf: NSLayoutConstraint.constraints(withVisualFormat: "H:[imageView]-[textView]-|", options: [], metrics: nil, views: views))
                 dynamicConstraints.append(contentsOf: NSLayoutConstraint.constraints(withVisualFormat: "H:[imageView]-[label]-|", options: [], metrics: nil, views: views))
             }
+            dynamicConstraints.append(contentsOf: NSLayoutConstraint.constraints(withVisualFormat: "H:[imageView]-(15)-[textView]-|", options: [], metrics: nil, views: views))
+            dynamicConstraints.append(contentsOf: NSLayoutConstraint.constraints(withVisualFormat: "H:[imageView]-(15)-[label]-|", options: [], metrics: nil, views: views))
         }
         else {
             dynamicConstraints.append(contentsOf: NSLayoutConstraint.constraints(withVisualFormat: "H:|-[textView]-|", options: [], metrics: nil, views: views))
