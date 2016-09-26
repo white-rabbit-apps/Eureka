@@ -26,111 +26,108 @@
 import Foundation
 
 /// Base class for the Eureka cells
-public class BaseCell : UITableViewCell, BaseCellType {
-    
+open class BaseCell : UITableViewCell, BaseCellType {
+
     /// Untyped row associated to this cell.
     public var baseRow: BaseRow! { return nil }
-    
+
     /// Block that returns the height for this cell.
     public var height: (()->CGFloat)?
-    
+
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
-    
+
     public required override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
     }
-    
+
     /**
      Function that returns the FormViewController this cell belongs to.
      */
-    public func formViewController () -> FormViewController? {
+    public func formViewController() -> FormViewController? {
         var responder : AnyObject? = self
         while responder != nil {
             if responder! is FormViewController {
                 return responder as? FormViewController
             }
-            responder = responder?.nextResponder()
+            responder = responder?.next
         }
         return nil
     }
-    
-    public func setup(){}
-    public func update() {}
-    
-    public func didSelect() {}
-    
-    public func highlight() {}
-    public func unhighlight() {}
-    
-    
+
+    open func setup(){}
+    open func update() {}
+
+    open func didSelect() {}
+
     /**
      If the cell can become first responder. By default returns false
      */
-    public func cellCanBecomeFirstResponder() -> Bool {
+    open func cellCanBecomeFirstResponder() -> Bool {
         return false
     }
-    
+
     /**
      Called when the cell becomes first responder
      */
-    public func cellBecomeFirstResponder(direction: Direction = .Down) -> Bool {
+    @discardableResult
+    open func cellBecomeFirstResponder(withDirection: Direction = .down) -> Bool {
         return becomeFirstResponder()
     }
-    
+
     /**
      Called when the cell resigns first responder
      */
-    public func cellResignFirstResponder() -> Bool {
+    @discardableResult
+    open func cellResignFirstResponder() -> Bool {
         return resignFirstResponder()
     }
 }
 
 /// Generic class that represents the Eureka cells.
-public class Cell<T: Equatable> : BaseCell, TypedCellType {
-    
+open class Cell<T: Equatable> : BaseCell, TypedCellType {
+
     public typealias Value = T
-    
+
     /// The row associated to this cell
     public weak var row : RowOf<T>!
-    
     private var firstLoad: Bool = true
     
     /// Returns the navigationAccessoryView if it is defined or calls super if not.
-    override public var inputAccessoryView: UIView? {
-        if let v = formViewController()?.inputAccessoryViewForRow(row){
+    override open var inputAccessoryView: UIView? {
+        if let v = formViewController()?.inputAccessoryView(for: row){
             return v
         }
         return super.inputAccessoryView
     }
-    
+
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
-    
+
     required public init(style: UITableViewCellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         height = { UITableViewAutomaticDimension }
     }
-    
+
     /**
      Function responsible for setting up the cell at creation time.
      */
-    public override func setup(){
+    open override func setup(){
         super.setup()
     }
-    
+
     /**
      Function responsible for updating the cell each time it is reloaded.
      */
-    public override func update(){
+    open override func update(){
         super.update()
-        if  self.self.dynamicType == Eureka.ButtonCell || self.self.dynamicType == Eureka.TextAreaCell {
+        if type(of: self) == Eureka.ButtonCell || type(of: self) == Eureka.TextAreaCell {
             textLabel?.text = row.title
         } else {
             let numberOfSpace = row.title?.characters.count
-            if numberOfSpace > 0{
+            if numberOfSpace! > 0{
                 var text = ""
                 for _ in 0...numberOfSpace!{
                     text += "  "
@@ -138,18 +135,18 @@ public class Cell<T: Equatable> : BaseCell, TypedCellType {
                 }
             }
             
-            imageView?.hidden = true
+            imageView?.isHidden = true
             let text = row.title
-            let width = UIScreen.mainScreen().bounds.width
+            let width = UIScreen.main.bounds.width
             let height = self.frame.height
-            let labelView = UILabel(frame: CGRectMake(50, 0, width/2 , height))
+            let labelView = UILabel(frame: CGRect(x: 50, y: 0, width: width/2 , height: height))
             labelView.text = text
             
             let imgView = UIImageView()
             if width > 400{
-                imgView.frame = CGRectMake(17, (height-25)/2, 25 , height)
+                imgView.frame = CGRect(x: 17, y: (height-25)/2, width: 25 , height: height)
             } else {
-                imgView.frame = CGRectMake(13, (height-25)/2, 25 , height)
+                imgView.frame = CGRect(x: 13, y: (height-25)/2, width: 25 , height: height)
             }
             
             imgView.image = imageView?.image
@@ -164,35 +161,36 @@ public class Cell<T: Equatable> : BaseCell, TypedCellType {
             
         }
         
-        textLabel?.textColor = row.isDisabled ? .grayColor() : .blackColor()
+        textLabel?.text = row.title
+        textLabel?.textColor = row.isDisabled ? .gray : .black
         detailTextLabel?.text = row.displayValueFor?(row.value) ?? (row as? NoValueDisplayTextConformance)?.noValueDisplayText
     }
-    
+
     /**
      Called when the cell was selected.
      */
-    public override func didSelect() {}
-    
-    public override func canBecomeFirstResponder() -> Bool {
-        return false
+    open override func didSelect() {}
+
+    override open var canBecomeFirstResponder: Bool {
+        get { return false }
     }
-    
-    public override func becomeFirstResponder() -> Bool {
+
+    open override func becomeFirstResponder() -> Bool {
         let result = super.becomeFirstResponder()
         if result {
-            formViewController()?.beginEditing(self)
+            formViewController()?.beginEditing(of: self)
         }
         return result
     }
-    
-    public override func resignFirstResponder() -> Bool {
+
+    open override func resignFirstResponder() -> Bool {
         let result = super.resignFirstResponder()
         if result {
-            formViewController()?.endEditing(self)
+            formViewController()?.endEditing(of: self)
         }
         return result
     }
-    
+
     /// The untyped row associated to this cell.
     public override var baseRow : BaseRow! { return row }
 }
