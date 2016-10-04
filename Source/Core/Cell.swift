@@ -92,7 +92,6 @@ open class Cell<T: Equatable> : BaseCell, TypedCellType {
 
     /// The row associated to this cell
     public weak var row : RowOf<T>!
-
     private var firstLoad: Bool = true
     
     /// Returns the navigationAccessoryView if it is defined or calls super if not.
@@ -124,12 +123,11 @@ open class Cell<T: Equatable> : BaseCell, TypedCellType {
      */
     open override func update(){
         super.update()
-        if  self.self.dynamicType == Eureka.ButtonCell || self.self.dynamicType == Eureka.TextAreaCell {
+        if type(of: self) == Eureka.ButtonCell || type(of: self) == Eureka.TextAreaCell {
             textLabel?.text = row.title
-            textLabel?.textColor = row.isDisabled ? .gray : .black
         } else {
             let numberOfSpace = row.title?.characters.count
-            if numberOfSpace > 0{
+            if numberOfSpace! > 0{
                 var text = ""
                 for _ in 0...numberOfSpace!{
                     text += "  "
@@ -137,18 +135,18 @@ open class Cell<T: Equatable> : BaseCell, TypedCellType {
                 }
             }
             
-            imageView?.hidden = true
+            imageView?.isHidden = true
             let text = row.title
-            let width = UIScreen.mainScreen().bounds.width
+            let width = UIScreen.main.bounds.width
             let height = self.frame.height
-            let labelView = UILabel(frame: CGRectMake(50, 0, width/2 , height))
+            let labelView = UILabel(frame: CGRect(x: 50, y: 0, width: width/2 , height: height))
             labelView.text = text
             
             let imgView = UIImageView()
             if width > 400{
-                imgView.frame = CGRectMake(17, (height-25)/2, 25 , height)
+                imgView.frame = CGRect(x: 17, y: (height-25)/2, width: 25 , height: height)
             } else {
-                imgView.frame = CGRectMake(13, (height-25)/2, 25 , height)
+                imgView.frame = CGRect(x: 13, y: (height-25)/2, width: 25 , height: height)
             }
             
             imgView.image = imageView?.image
